@@ -550,7 +550,7 @@ impl Components {
 			self.modal = Some((state.generation, modal.id, components));
 		}
 		let mut submit = false;
-		let mut  = false;
+		let mut submit_on_enter = false;
 		let busy = state.interactions.busy();
 		let components = &mut self.modal.as_mut().expect("modal initialized").2;
 		let response = dialog::Dialog::new(
@@ -581,7 +581,7 @@ impl Components {
 										&mut self.formatted,
 										&mut self.text_revealed,
 										&mut self.focus_first_input,
-										&mut ,
+										&mut submit_on_enter,
 									);
 								});
 							}
