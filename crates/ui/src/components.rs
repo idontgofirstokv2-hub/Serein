@@ -550,7 +550,7 @@ impl Components {
 			self.modal = Some((state.generation, modal.id, components));
 		}
 		let mut submit = false;
-		let mut submit_on_enter = false;
+		let mut  = false;
 		let busy = state.interactions.busy();
 		let components = &mut self.modal.as_mut().expect("modal initialized").2;
 		let response = dialog::Dialog::new(
@@ -581,7 +581,7 @@ impl Components {
 										&mut self.formatted,
 										&mut self.text_revealed,
 										&mut self.focus_first_input,
-										&mut submit_on_enter,
+										&mut ,
 									);
 								});
 							}
@@ -598,8 +598,7 @@ impl Components {
 				ui.add_enabled_ui(valid && !busy, |ui| {
 					submit =
 						dialog::action(ui, "components-dialogs-submit", dialog::Action::Primary)
-							.clicked()
-							|| submit_on_enter;
+							.clicked() || submit_on_enter;
 				});
 			});
 		});
