@@ -550,6 +550,7 @@ impl Components {
 			self.modal = Some((state.generation, modal.id, components));
 		}
 		let mut submit = false;
+		let mut submit_on_enter = false;
 		let busy = state.interactions.busy();
 		let components = &mut self.modal.as_mut().expect("modal initialized").2;
 		let response = dialog::Dialog::new(
@@ -580,6 +581,7 @@ impl Components {
 										&mut self.formatted,
 										&mut self.text_revealed,
 										&mut self.focus_first_input,
+										&mut submit_on_enter,
 									);
 								});
 							}
@@ -596,7 +598,8 @@ impl Components {
 				ui.add_enabled_ui(valid && !busy, |ui| {
 					submit =
 						dialog::action(ui, "components-dialogs-submit", dialog::Action::Primary)
-							.clicked();
+							.clicked()
+							|| submit_on_enter;
 				});
 			});
 		});
@@ -908,6 +911,7 @@ fn field(
 	formatted: &mut markdown::FormatCache,
 	revealed: &mut std::collections::BTreeMap<u64, u32>,
 	focus_first_input: &mut bool,
+	submit_on_enter: &mut bool,
 ) -> bool {
 	let mut valid = true;
 	ui.push_id((c.id, c.custom_id.clone()), |ui| {
@@ -934,6 +938,7 @@ fn field(
 							formatted,
 							revealed,
 							focus_first_input,
+							submit_on_enter,
 						);
 					});
 				}
@@ -951,12 +956,14 @@ fn field(
 						formatted,
 						revealed,
 						focus_first_input,
+						submit_on_enter,
 					);
 				}
 			}
 			4 => {
 				let value = c.value.get_or_insert_with(String::new);
-				let edit = if c.style == Some(2) {
+				let multiline = c.style == Some(2);
+				let edit = if multiline {
 					egui::TextEdit::multiline(value).desired_rows(5)
 				} else {
 					egui::TextEdit::singleline(value).align(egui::Align2::LEFT_CENTER)
@@ -971,6 +978,12 @@ fn field(
 				if *focus_first_input {
 					response.request_focus();
 					*focus_first_input = false;
+				}
+				if !multiline
+					&& (response.has_focus() || response.lost_focus())
+					&& ui.input(|i| i.key_pressed(egui::Key::Enter))
+				{
+					*submit_on_enter = true;
 				}
 				let length = value.chars().count();
 				valid = (!c.required && length == 0)
