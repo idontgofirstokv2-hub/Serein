@@ -27,6 +27,7 @@ pub(crate) struct Components {
 	pub(crate) remote_search: bool,
 	select: Option<(egui::Id, Vec<String>)>,
 	modal: Option<(u64, Id, Vec<Component>)>,
+	focus_first_input: bool,
 	formatted: markdown::FormatCache,
 	pub(crate) file_request: Option<String>,
 	files: Vec<(String, Vec<(usize, String)>)>,
@@ -529,6 +530,7 @@ impl Components {
 				self.remote_search = false;
 				self.search = Default::default();
 			}
+			self.focus_first_input = false;
 			self.files.clear();
 			self.file_request = None;
 			return;
@@ -544,6 +546,7 @@ impl Components {
 			self.text_revealed.clear();
 			self.search = Default::default();
 			self.remote_search = false;
+			self.focus_first_input = true;
 			self.modal = Some((state.generation, modal.id, components));
 		}
 		let mut submit = false;
@@ -576,6 +579,7 @@ impl Components {
 										opening,
 										&mut self.formatted,
 										&mut self.text_revealed,
+										&mut self.focus_first_input,
 									);
 								});
 							}
@@ -903,6 +907,7 @@ fn field(
 	opening: &mut Option<String>,
 	formatted: &mut markdown::FormatCache,
 	revealed: &mut std::collections::BTreeMap<u64, u32>,
+	focus_first_input: &mut bool,
 ) -> bool {
 	let mut valid = true;
 	ui.push_id((c.id, c.custom_id.clone()), |ui| {
@@ -928,6 +933,7 @@ fn field(
 							opening,
 							formatted,
 							revealed,
+							focus_first_input,
 						);
 					});
 				}
@@ -944,6 +950,7 @@ fn field(
 						opening,
 						formatted,
 						revealed,
+						focus_first_input,
 					);
 				}
 			}
@@ -954,13 +961,17 @@ fn field(
 				} else {
 					egui::TextEdit::singleline(value).align(egui::Align2::LEFT_CENTER)
 				};
-				ui.add(
+				let response = ui.add(
 					edit.char_limit(usize::from(c.max_length.unwrap_or(4000)).min(4000))
 						.font(egui::FontId::proportional(15.0))
 						.margin(egui::vec2(12.0, 10.0))
 						.hint_text(c.placeholder.as_deref().unwrap_or_default())
 						.desired_width(f32::INFINITY),
 				);
+				if *focus_first_input {
+					response.request_focus();
+					*focus_first_input = false;
+				}
 				let length = value.chars().count();
 				valid = (!c.required && length == 0)
 					|| (length >= usize::from(c.min_length.unwrap_or(u16::from(c.required)))
